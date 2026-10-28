@@ -1,0 +1,28 @@
+ai-worker-agent/
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml               # Linting, type checks, and unit tests
+│   │   └── docker-publish.yml   # Build and push agent container image
+│   └── pull_request_template.md
+├── src/
+│   ├── agent/
+│   │   ├── core.py              # Agent loop, model invocation, system prompts
+│   │   ├── memory.py            # Ephemeral or persistent state handling
+│   │   └── tools/               # Modular tool definitions (APIs, DB, scraping)
+│   │       ├── __init__.py
+│   │       └── web_search.py
+│   ├── worker/
+│   │   ├── consumer.py          # Queue subscriber / message deserializer
+│   │   ├── tasks.py             # Task entry points and error handlers
+│   │   └── publisher.py         # Result delivery (DB, webhook, response queue)
+│   ├── config.py                # Pydantic Settings for environment variables
+│   └── telemetry.py             # Tracing (OpenTelemetry, Langfuse, or Loguru)
+├── tests/
+│   ├── unit/                    # Mocked tool and parser tests
+│   └── integration/             # End-to-end task execution tests
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── Dockerfile
+├── pyproject.toml               # Poetry, UV, or Hatch configuration
+└── README.md
