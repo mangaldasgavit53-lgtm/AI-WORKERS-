@@ -1,0 +1,48 @@
+import json
+from typing import Any, Callable, Dict, List
+from openai import AsyncOpenAI
+from pydantic import BaseModel
+
+class WorkerAgent:
+    def __init__(self, client: AsyncOpenAI, model: str = "gpt-4o-mini"):
+        self.client = client
+        self.model = model
+        self.tool_registry: Dict[str, Callable] = {}
+        self.tools_schema: List[Dict[str, Any]] = []
+
+    def register_tool(self, schema: Dict[str, Any], func: Callable):
+        self.tool_registry[schema["function"]["name"]] = func
+        self.tools_schema.append(schema)
+
+    async def run(self, task_prompt: str) -> str:
+        messages = [
+            {"role": "system", "content": "You are an autonomous worker agent. Execute assigned tasks with registered tools."},
+            {"role": "user", "content": task_prompt}
+        ]
+
+        # Standard tool execution loop
+        while True:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                tools=self.tools_schema if self.tools_schema else None,
+                temperature=0.2,
+            )
+            message = response.choices[0].message
+            messages.append(message)
+
+            if not message.tool_calls:
+                return message.content or ""
+
+            for call in message.tool_calls:
+                func_name = call.function.name
+                func_args = json.loads(call.function.arguments)
+                tool = self.tool_registry.get(func_name)
+                
+                result = await tool(**func_args) if tool else f"Error: Tool {func_name} not found"
+                
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": call.id,
+                    "content": json.dumps(result)
+                })
